@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode; // <-- ИСПРАВЛЕНО
 
 @Data
 @Builder
@@ -15,7 +15,6 @@ import tools.jackson.databind.JsonNode;
 public class LessonBlockUpdateRequest {
 
     private BlockType blockType;
-
     private JsonNode content;
 
     @Positive(message = "Порядковый номер должен быть положительным")
