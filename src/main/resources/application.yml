@@ -20,3 +20,12 @@ spring:
 
 server:
   port: 8080
+
+app:
+  jwt:
+    secret: "education-platform-super-secret-key-must-be-at-least-256-bits-long"
+    expiration: 86400000 # 24 часа в миллисекундах
+
+logging:
+  level:
+    org.springframework.security: DEBUG
