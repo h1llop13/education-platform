@@ -33,4 +33,13 @@ public class CourseController {
         CourseResponse response = courseService.createCourse(request, userDetails.getId());
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+
+    @PostMapping("/{id}/publish")
+    public ResponseEntity<CourseResponse> publishCourse(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        CourseResponse response = courseService.publishCourse(id, userDetails);
+        return ResponseEntity.ok(response);
+    }
 }

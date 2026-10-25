@@ -10,6 +10,7 @@ import com.education.courses.repository.CourseRepository;
 import com.education.users.entity.Role;
 import com.education.users.entity.User;
 import com.education.users.repository.UserRepository;
+import com.education.users.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,5 +71,24 @@ public class CourseService {
                 course.getAuthor().getFullName(),
                 course.getCreatedAt()
         );
+    }
+
+    @Transactional
+    public CourseResponse publishCourse(Long courseId, CustomUserDetails userDetails) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new BusinessException("COURSE_NOT_FOUND", "Курс не найден"));
+
+        // Проверка прав: публиковать может только автор курса или администратор
+        boolean isAuthor = course.getAuthor().getId().equals(userDetails.getId());
+        boolean isAdmin = userDetails.getRole().equals(com.education.users.entity.Role.ADMIN);
+
+        if (!isAuthor && !isAdmin) {
+            throw new BusinessException("FORBIDDEN", "Вы можете публиковать только свои курсы");
+        }
+
+        course.setStatus(CourseStatus.PUBLISHED);
+        Course savedCourse = courseRepository.save(course);
+
+        return mapToResponse(savedCourse);
     }
 }
