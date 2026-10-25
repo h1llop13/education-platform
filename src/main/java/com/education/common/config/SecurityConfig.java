@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/courses").permitAll() // Каталог открыт
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
