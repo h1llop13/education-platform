@@ -18,6 +18,11 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
 server:
   port: 8080
 
@@ -25,6 +30,10 @@ app:
   jwt:
     secret: "education-platform-super-secret-key-must-be-at-least-256-bits-long"
     expiration: 86400000 # 24 часа в миллисекундах
+  storage:
+    upload-dir: "./uploads"
+    allowed-mime-types: image/jpeg,image/png,image/gif,application/pdf,video/mp4,video/webm
+    max-file-size-bytes: 52428800 # 50 MB в байтах
 
 logging:
   level:

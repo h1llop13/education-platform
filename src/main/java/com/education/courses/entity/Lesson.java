@@ -40,6 +40,7 @@ public class Lesson {
     private Integer orderIndex;
 
     @Column(name = "is_published", nullable = false)
+    @Builder.Default
     private Boolean isPublished = false;
 
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
