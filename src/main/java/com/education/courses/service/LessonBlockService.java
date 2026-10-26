@@ -1,34 +1,32 @@
 package com.education.courses.service;
 
+import com.education.common.exception.BusinessException;
 import com.education.courses.dto.LessonBlockCreateRequest;
 import com.education.courses.dto.LessonBlockResponse;
 import com.education.courses.dto.LessonBlockUpdateRequest;
+import com.education.courses.entity.Course;
 import com.education.courses.entity.Lesson;
 import com.education.courses.entity.LessonBlock;
 import com.education.courses.repository.LessonBlockRepository;
 import com.education.courses.repository.LessonRepository;
+import com.education.users.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
 public class LessonBlockService {
 
-    private final LessonBlockRepository blockRepository;
+    private final LessonBlockRepository lessonBlockRepository;
     private final LessonRepository lessonRepository;
-    private final LessonService lessonService; // Для переиспользования проверки прав
 
     @Transactional
-    public LessonBlockResponse addBlock(Long lessonId, LessonBlockCreateRequest request) {
+    public LessonBlockResponse addBlock(Long lessonId, LessonBlockCreateRequest request, CustomUserDetails userDetails) {
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Урок не найден"));
+                .orElseThrow(() -> new BusinessException("LESSON_NOT_FOUND", "Урок не найден"));
 
-        // Проверка прав через существующий метод (нужно сделать его package-private или public в LessonService,
-        // или продублировать логику. Сделаем public метод verifyAccess в LessonService)
-        lessonService.verifyCourseOwner(lesson.getCourse());
+        checkCourseOwnership(lesson.getCourse(), userDetails);
 
         LessonBlock block = LessonBlock.builder()
                 .lesson(lesson)
@@ -37,30 +35,40 @@ public class LessonBlockService {
                 .orderIndex(request.getOrderIndex())
                 .build();
 
-        return mapToResponse(blockRepository.save(block));
+        return mapToResponse(lessonBlockRepository.save(block));
     }
 
     @Transactional
-    public LessonBlockResponse updateBlock(Long blockId, LessonBlockUpdateRequest request) {
-        LessonBlock block = blockRepository.findById(blockId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Блок не найден"));
+    public LessonBlockResponse updateBlock(Long blockId, LessonBlockUpdateRequest request, CustomUserDetails userDetails) {
+        LessonBlock block = lessonBlockRepository.findById(blockId)
+                .orElseThrow(() -> new BusinessException("BLOCK_NOT_FOUND", "Блок не найден"));
 
-        lessonService.verifyCourseOwner(block.getLesson().getCourse());
+        checkCourseOwnership(block.getLesson().getCourse(), userDetails);
 
-        if (request.getBlockType() != null) block.setBlockType(request.getBlockType());
-        if (request.getContent() != null) block.setContent(request.getContent());
-        if (request.getOrderIndex() != null) block.setOrderIndex(request.getOrderIndex());
+        block.setBlockType(request.getBlockType());
+        block.setContent(request.getContent());
+        block.setOrderIndex(request.getOrderIndex());
 
-        return mapToResponse(blockRepository.save(block));
+        return mapToResponse(lessonBlockRepository.save(block));
     }
 
     @Transactional
-    public void deleteBlock(Long blockId) {
-        LessonBlock block = blockRepository.findById(blockId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Блок не найден"));
+    public void deleteBlock(Long blockId, CustomUserDetails userDetails) {
+        LessonBlock block = lessonBlockRepository.findById(blockId)
+                .orElseThrow(() -> new BusinessException("BLOCK_NOT_FOUND", "Блок не найден"));
 
-        lessonService.verifyCourseOwner(block.getLesson().getCourse());
-        blockRepository.delete(block);
+        checkCourseOwnership(block.getLesson().getCourse(), userDetails);
+
+        lessonBlockRepository.delete(block);
+    }
+
+    private void checkCourseOwnership(Course course, CustomUserDetails userDetails) {
+        boolean isAuthor = course.getAuthor().getId().equals(userDetails.getId());
+        boolean isAdmin = "ADMIN".equals(userDetails.getRole());
+
+        if (!isAuthor && !isAdmin) {
+            throw new BusinessException("FORBIDDEN", "У вас нет прав на изменение этого курса");
+        }
     }
 
     private LessonBlockResponse mapToResponse(LessonBlock block) {

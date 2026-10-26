@@ -3,9 +3,11 @@ package com.education.courses.controller;
 import com.education.courses.dto.*;
 import com.education.courses.service.LessonBlockService;
 import com.education.courses.service.LessonService;
+import com.education.users.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,13 +20,12 @@ public class LessonController {
     private final LessonService lessonService;
     private final LessonBlockService lessonBlockService;
 
-    // --- Уроки ---
-
     @PostMapping("/courses/{courseId}/lessons")
     public ResponseEntity<LessonResponse> createLesson(
             @PathVariable Long courseId,
-            @Valid @RequestBody LessonCreateRequest request) {
-        return ResponseEntity.ok(lessonService.createLesson(courseId, request));
+            @Valid @RequestBody LessonCreateRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(lessonService.createLesson(courseId, request, userDetails));
     }
 
     @GetMapping("/courses/{courseId}/lessons")
@@ -40,35 +41,40 @@ public class LessonController {
     @PutMapping("/lessons/{lessonId}")
     public ResponseEntity<LessonResponse> updateLesson(
             @PathVariable Long lessonId,
-            @Valid @RequestBody LessonUpdateRequest request) {
-        return ResponseEntity.ok(lessonService.updateLesson(lessonId, request));
+            @Valid @RequestBody LessonUpdateRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(lessonService.updateLesson(lessonId, request, userDetails));
     }
 
     @DeleteMapping("/lessons/{lessonId}")
-    public ResponseEntity<Void> deleteLesson(@PathVariable Long lessonId) {
-        lessonService.deleteLesson(lessonId);
+    public ResponseEntity<Void> deleteLesson(
+            @PathVariable Long lessonId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        lessonService.deleteLesson(lessonId, userDetails);
         return ResponseEntity.noContent().build();
     }
-
-    // --- Блоки уроков ---
 
     @PostMapping("/lessons/{lessonId}/blocks")
     public ResponseEntity<LessonBlockResponse> addBlock(
             @PathVariable Long lessonId,
-            @Valid @RequestBody LessonBlockCreateRequest request) {
-        return ResponseEntity.ok(lessonBlockService.addBlock(lessonId, request));
+            @Valid @RequestBody LessonBlockCreateRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(lessonBlockService.addBlock(lessonId, request, userDetails));
     }
 
     @PutMapping("/lessons/blocks/{blockId}")
     public ResponseEntity<LessonBlockResponse> updateBlock(
             @PathVariable Long blockId,
-            @Valid @RequestBody LessonBlockUpdateRequest request) {
-        return ResponseEntity.ok(lessonBlockService.updateBlock(blockId, request));
+            @Valid @RequestBody LessonBlockUpdateRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(lessonBlockService.updateBlock(blockId, request, userDetails));
     }
 
     @DeleteMapping("/lessons/blocks/{blockId}")
-    public ResponseEntity<Void> deleteBlock(@PathVariable Long blockId) {
-        lessonBlockService.deleteBlock(blockId);
+    public ResponseEntity<Void> deleteBlock(
+            @PathVariable Long blockId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        lessonBlockService.deleteBlock(blockId, userDetails);
         return ResponseEntity.noContent().build();
     }
 }

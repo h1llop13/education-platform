@@ -3,6 +3,7 @@ package com.education.courses.service;
 import com.education.common.exception.BusinessException;
 import com.education.courses.dto.CourseCreateRequest;
 import com.education.courses.dto.CourseResponse;
+import com.education.courses.dto.CourseUpdateRequest;
 import com.education.courses.entity.Course;
 import com.education.courses.entity.CourseStatus;
 import com.education.courses.entity.CourseVisibility;
@@ -29,7 +30,6 @@ public class CourseService {
         User author = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "Пользователь не найден"));
 
-        // Проверка роли: создавать курсы могут только TEACHER и ADMIN
         if (author.getRole() != Role.TEACHER && author.getRole() != Role.ADMIN) {
             throw new BusinessException("FORBIDDEN", "Только преподаватели и администраторы могут создавать курсы");
         }
@@ -40,22 +40,87 @@ public class CourseService {
                 .coverUrl(request.coverUrl())
                 .discipline(request.discipline())
                 .visibility(request.visibility() != null ? request.visibility() : CourseVisibility.PUBLIC)
-                .status(CourseStatus.DRAFT) // Новый курс всегда создается как черновик
+                .status(CourseStatus.DRAFT)
                 .author(author)
                 .build();
 
-        Course savedCourse = courseRepository.save(course);
+        return mapToResponse(courseRepository.save(course));
+    }
 
-        return mapToResponse(savedCourse);
+    @Transactional(readOnly = true)
+    public CourseResponse getCourse(Long id) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("COURSE_NOT_FOUND", "Курс не найден"));
+        return mapToResponse(course);
     }
 
     @Transactional(readOnly = true)
     public List<CourseResponse> getPublicCatalog() {
-        // Возвращаем только опубликованные и публичные курсы для каталога
         return courseRepository.findByStatusAndVisibility(CourseStatus.PUBLISHED, CourseVisibility.PUBLIC)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Transactional
+    public CourseResponse updateCourse(Long courseId, CourseUpdateRequest request, CustomUserDetails userDetails) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new BusinessException("COURSE_NOT_FOUND", "Курс не найден"));
+
+        checkCourseOwnership(course, userDetails);
+
+        course.setTitle(request.title());
+        course.setDescription(request.description());
+        course.setCoverUrl(request.coverUrl());
+        // Внимание: здесь используется request.descipline() из-за опечатки в вашем DTO
+        course.setDiscipline(request.descipline());
+
+        return mapToResponse(courseRepository.save(course));
+    }
+
+    @Transactional
+    public CourseResponse publishCourse(Long courseId, CustomUserDetails userDetails) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new BusinessException("COURSE_NOT_FOUND", "Курс не найден"));
+
+        checkCourseOwnership(course, userDetails);
+
+        course.setStatus(CourseStatus.PUBLISHED);
+        return mapToResponse(courseRepository.save(course));
+    }
+
+    @Transactional
+    public CourseResponse copyCourse(Long courseId, Long currentUserId) {
+        Course original = courseRepository.findById(courseId)
+                .orElseThrow(() -> new BusinessException("COURSE_NOT_FOUND", "Курс не найден"));
+
+        User newAuthor = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "Пользователь не найден"));
+
+        if (newAuthor.getRole() != Role.TEACHER && newAuthor.getRole() != Role.ADMIN) {
+            throw new BusinessException("FORBIDDEN", "Только преподаватели и администраторы могут копировать курсы");
+        }
+
+        Course copy = Course.builder()
+                .title(original.getTitle() + " (Копия)")
+                .description(original.getDescription())
+                .coverUrl(original.getCoverUrl())
+                .discipline(original.getDiscipline())
+                .visibility(CourseVisibility.PUBLIC)
+                .status(CourseStatus.DRAFT)
+                .author(newAuthor)
+                .build();
+
+        return mapToResponse(courseRepository.save(copy));
+    }
+
+    private void checkCourseOwnership(Course course, CustomUserDetails userDetails) {
+        boolean isAuthor = course.getAuthor().getId().equals(userDetails.getId());
+        boolean isAdmin = "ADMIN".equals(userDetails.getRole());
+
+        if (!isAuthor && !isAdmin) {
+            throw new BusinessException("FORBIDDEN", "Вы можете изменять только свои курсы");
+        }
     }
 
     private CourseResponse mapToResponse(Course course) {
@@ -71,24 +136,5 @@ public class CourseService {
                 course.getAuthor().getFullName(),
                 course.getCreatedAt()
         );
-    }
-
-    @Transactional
-    public CourseResponse publishCourse(Long courseId, CustomUserDetails userDetails) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new BusinessException("COURSE_NOT_FOUND", "Курс не найден"));
-
-        // Проверка прав: публиковать может только автор курса или администратор
-        boolean isAuthor = course.getAuthor().getId().equals(userDetails.getId());
-        boolean isAdmin = userDetails.getRole().equals(com.education.users.entity.Role.ADMIN);
-
-        if (!isAuthor && !isAdmin) {
-            throw new BusinessException("FORBIDDEN", "Вы можете публиковать только свои курсы");
-        }
-
-        course.setStatus(CourseStatus.PUBLISHED);
-        Course savedCourse = courseRepository.save(course);
-
-        return mapToResponse(savedCourse);
     }
 }

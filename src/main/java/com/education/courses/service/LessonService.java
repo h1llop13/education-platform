@@ -1,20 +1,20 @@
 package com.education.courses.service;
 
-import com.education.courses.dto.*;
+import com.education.common.exception.BusinessException;
+import com.education.courses.dto.LessonBlockResponse;
+import com.education.courses.dto.LessonCreateRequest;
+import com.education.courses.dto.LessonResponse;
+import com.education.courses.dto.LessonUpdateRequest;
 import com.education.courses.entity.Course;
 import com.education.courses.entity.Lesson;
 import com.education.courses.repository.CourseRepository;
 import com.education.courses.repository.LessonRepository;
+import com.education.users.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,26 +23,12 @@ public class LessonService {
     private final LessonRepository lessonRepository;
     private final CourseRepository courseRepository;
 
-    @Transactional(readOnly = true)
-    public List<LessonResponse> getLessonsByCourse(Long courseId) {
-        return lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public LessonResponse getLesson(Long lessonId) {
-        Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Урок не найден"));
-        return mapToResponse(lesson);
-    }
-
     @Transactional
-    public LessonResponse createLesson(Long courseId, LessonCreateRequest request) {
+    public LessonResponse createLesson(Long courseId, LessonCreateRequest request, CustomUserDetails userDetails) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Курс не найден"));
+                .orElseThrow(() -> new BusinessException("COURSE_NOT_FOUND", "Курс не найден"));
 
-        verifyCourseOwner(course);
+        checkCourseOwnership(course, userDetails);
 
         Lesson lesson = Lesson.builder()
                 .course(course)
@@ -55,60 +41,69 @@ public class LessonService {
         return mapToResponse(lessonRepository.save(lesson));
     }
 
-    @Transactional
-    public LessonResponse updateLesson(Long lessonId, LessonUpdateRequest request) {
+    @Transactional(readOnly = true)
+    public List<LessonResponse> getLessonsByCourse(Long courseId) {
+        return lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public LessonResponse getLesson(Long lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Урок не найден"));
+                .orElseThrow(() -> new BusinessException("LESSON_NOT_FOUND", "Урок не найден"));
+        return mapToResponse(lesson);
+    }
 
-        verifyCourseOwner(lesson.getCourse());
+    @Transactional
+    public LessonResponse updateLesson(Long lessonId, LessonUpdateRequest request, CustomUserDetails userDetails) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new BusinessException("LESSON_NOT_FOUND", "Урок не найден"));
 
-        if (request.getTitle() != null) lesson.setTitle(request.getTitle());
-        if (request.getDescription() != null) lesson.setDescription(request.getDescription());
-        if (request.getOrderIndex() != null) lesson.setOrderIndex(request.getOrderIndex());
-        if (request.getIsPublished() != null) lesson.setIsPublished(request.getIsPublished());
+        checkCourseOwnership(lesson.getCourse(), userDetails);
+
+        lesson.setTitle(request.getTitle());
+        lesson.setDescription(request.getDescription());
+        lesson.setOrderIndex(request.getOrderIndex());
+        if (request.getIsPublished() != null) {
+            lesson.setIsPublished(request.getIsPublished());
+        }
 
         return mapToResponse(lessonRepository.save(lesson));
     }
 
     @Transactional
-    public void deleteLesson(Long lessonId) {
+    public void deleteLesson(Long lessonId, CustomUserDetails userDetails) {
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Урок не найден"));
+                .orElseThrow(() -> new BusinessException("LESSON_NOT_FOUND", "Урок не найден"));
 
-        verifyCourseOwner(lesson.getCourse());
+        checkCourseOwnership(lesson.getCourse(), userDetails);
+
         lessonRepository.delete(lesson);
     }
 
-    // СДЕЛАНО PUBLIC для использования в LessonBlockService
-    public void verifyCourseOwner(Course course) {
-        Long currentUserId = getCurrentUserId();
-        // ИСПРАВЛЕНО: getAuthor() вместо getOwner()
-        if (course.getAuthor() == null || !course.getAuthor().getId().equals(currentUserId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Нет прав на управление этим курсом");
-        }
-    }
+    private void checkCourseOwnership(Course course, CustomUserDetails userDetails) {
+        boolean isAuthor = course.getAuthor().getId().equals(userDetails.getId());
+        boolean isAdmin = "ADMIN".equals(userDetails.getRole());
 
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Пользователь не авторизован");
+        if (!isAuthor && !isAdmin) {
+            throw new BusinessException("FORBIDDEN", "У вас нет прав на изменение этого курса");
         }
-        // Адаптируйте под вашу реализацию, если principal хранится иначе
-        return Long.valueOf(authentication.getName());
     }
 
     private LessonResponse mapToResponse(Lesson lesson) {
         List<LessonBlockResponse> blockResponses = lesson.getBlocks().stream()
                 .map(block -> LessonBlockResponse.builder()
                         .id(block.getId())
-                        .lessonId(lesson.getId())
+                        .lessonId(block.getLesson().getId())
                         .blockType(block.getBlockType())
                         .content(block.getContent())
                         .orderIndex(block.getOrderIndex())
                         .createdAt(block.getCreatedAt())
                         .updatedAt(block.getUpdatedAt())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         return LessonResponse.builder()
                 .id(lesson.getId())
