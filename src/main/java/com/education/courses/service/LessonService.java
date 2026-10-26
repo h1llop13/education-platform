@@ -93,7 +93,8 @@ public class LessonService {
     }
 
     private LessonResponse mapToResponse(Lesson lesson) {
-        List<LessonBlockResponse> blockResponses = lesson.getBlocks().stream()
+        List<LessonBlockResponse> blockResponses = lesson.getBlocks() != null
+                ? lesson.getBlocks().stream()
                 .map(block -> LessonBlockResponse.builder()
                         .id(block.getId())
                         .lessonId(block.getLesson().getId())
@@ -103,7 +104,8 @@ public class LessonService {
                         .createdAt(block.getCreatedAt())
                         .updatedAt(block.getUpdatedAt())
                         .build())
-                .toList();
+                .toList()
+                : List.of();
 
         return LessonResponse.builder()
                 .id(lesson.getId())
