@@ -4,6 +4,7 @@ import com.education.common.exception.BusinessException;
 import com.education.courses.entity.Course;
 import com.education.courses.entity.Lesson;
 import com.education.courses.repository.LessonRepository;
+import com.education.courses.service.CourseAccessService;
 import com.education.tasks.dto.TaskAttemptRequest;
 import com.education.tasks.dto.TaskCreateRequest;
 import com.education.tasks.entity.AttemptStatus;
@@ -38,6 +39,7 @@ class TaskServiceTest {
     @Mock private TaskAttemptRepository taskAttemptRepository;
     @Mock private LessonRepository lessonRepository;
     @Mock private UserRepository userRepository;
+    @Mock private CourseAccessService courseAccessService;
 
     @InjectMocks private TaskService taskService;
 
@@ -55,7 +57,7 @@ class TaskServiceTest {
         studentDetails = new CustomUserDetails(student);
 
         Course course = Course.builder().id(10L).author(teacher).build();
-        lesson = Lesson.builder().id(100L).course(course).build();
+        lesson = Lesson.builder().id(100L).course(course).isPublished(true).build();
     }
 
     @Test

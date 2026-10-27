@@ -4,6 +4,7 @@ import com.education.common.exception.BusinessException;
 import com.education.courses.entity.Course;
 import com.education.courses.entity.CourseStatus;
 import com.education.courses.repository.CourseRepository;
+import com.education.courses.service.CourseAccessService;
 import com.education.files.dto.FileUploadResponse;
 import com.education.files.entity.StoredFile;
 import com.education.files.repository.StoredFileRepository;
@@ -43,6 +44,9 @@ class FileServiceTest {
 
     @Mock
     private CourseRepository courseRepository;
+
+    @Mock
+    private CourseAccessService courseAccessService;
 
     @InjectMocks
     private FileService fileService;
@@ -157,6 +161,8 @@ class FileServiceTest {
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(teacherUser));
         when(courseRepository.findById(100L)).thenReturn(Optional.of(course));
+        doThrow(new BusinessException("FORBIDDEN", "Нет прав на загрузку файлов в этот курс"))
+                .when(courseAccessService).checkEditAccess(100L, teacherDetails);
 
         assertThatThrownBy(() -> fileService.uploadFile(file, 100L, teacherDetails))
                 .isInstanceOf(BusinessException.class)

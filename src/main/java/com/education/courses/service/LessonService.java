@@ -7,6 +7,7 @@ import com.education.courses.dto.LessonResponse;
 import com.education.courses.dto.LessonUpdateRequest;
 import com.education.courses.entity.Course;
 import com.education.courses.entity.Lesson;
+import com.education.users.entity.Role; // <-- ДОБАВЛЕН ИМПОРТ
 import com.education.courses.repository.CourseRepository;
 import com.education.courses.repository.LessonRepository;
 import com.education.users.security.CustomUserDetails;
@@ -16,12 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+// ... (импорты остаются теми же)
+
 @Service
 @RequiredArgsConstructor
 public class LessonService {
 
     private final LessonRepository lessonRepository;
     private final CourseRepository courseRepository;
+    private final CourseAccessService courseAccessService;
 
     @Transactional
     public LessonResponse createLesson(Long courseId, LessonCreateRequest request, CustomUserDetails userDetails) {
@@ -42,17 +46,29 @@ public class LessonService {
     }
 
     @Transactional(readOnly = true)
-    public List<LessonResponse> getLessonsByCourse(Long courseId) {
+    public List<LessonResponse> getLessonsByCourse(Long courseId, CustomUserDetails userDetails) {
+        courseAccessService.checkAccess(courseId, userDetails);
+
+        boolean canViewDraftLessons = isCourseAuthorOrAdmin(courseRepository.getReferenceById(courseId), userDetails);
         return lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId)
                 .stream()
+                .filter(lesson -> canViewDraftLessons || Boolean.TRUE.equals(lesson.getIsPublished()))
                 .map(this::mapToResponse)
                 .toList();
     }
 
+    // ИСПРАВЛЕНО: добавлен параметр userDetails
     @Transactional(readOnly = true)
-    public LessonResponse getLesson(Long lessonId) {
+    public LessonResponse getLesson(Long lessonId, CustomUserDetails userDetails) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new BusinessException("LESSON_NOT_FOUND", "Урок не найден"));
+
+        courseAccessService.checkAccess(lesson.getCourse().getId(), userDetails);
+
+        if (!Boolean.TRUE.equals(lesson.getIsPublished()) && !isCourseAuthorOrAdmin(lesson.getCourse(), userDetails)) {
+            throw new BusinessException("ACCESS_DENIED", "Доступ к уроку запрещён");
+        }
+
         return mapToResponse(lesson);
     }
 
@@ -84,12 +100,14 @@ public class LessonService {
     }
 
     private void checkCourseOwnership(Course course, CustomUserDetails userDetails) {
-        boolean isAuthor = course.getAuthor().getId().equals(userDetails.getId());
-        boolean isAdmin = "ADMIN".equals(userDetails.getRole());
-
-        if (!isAuthor && !isAdmin) {
+        if (!isCourseAuthorOrAdmin(course, userDetails)) {
             throw new BusinessException("FORBIDDEN", "У вас нет прав на изменение этого курса");
         }
+    }
+
+    private boolean isCourseAuthorOrAdmin(Course course, CustomUserDetails userDetails) {
+        return course.getAuthor().getId().equals(userDetails.getId())
+                || Role.ADMIN.name().equals(userDetails.getRole());
     }
 
     private LessonResponse mapToResponse(Lesson lesson) {

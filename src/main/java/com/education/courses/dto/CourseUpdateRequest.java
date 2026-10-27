@@ -1,5 +1,6 @@
 package com.education.courses.dto;
 
+import com.education.courses.entity.CourseVisibility;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -13,6 +14,6 @@ public record CourseUpdateRequest(
 
         String coverUrl,
 
-        String descipline
-) {
-}
+        String discipline, // <-- ИСПРАВЛЕНО ЗДЕСЬ (было descipline)
+        CourseVisibility visibility
+) {}

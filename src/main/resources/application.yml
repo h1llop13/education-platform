@@ -28,7 +28,7 @@ server:
 
 app:
   jwt:
-    secret: "education-platform-super-secret-key-must-be-at-least-256-bits-long"
+    secret: ${JWT_SECRET}
     expiration: 86400000 # 24 часа в миллисекундах
   storage:
     upload-dir: "./uploads"

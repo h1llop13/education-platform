@@ -38,6 +38,9 @@ class CourseServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CourseAccessService courseAccessService;
+
     @InjectMocks
     private CourseService courseService;
 
@@ -138,7 +141,8 @@ class CourseServiceTest {
                 "New Title",
                 "New Description",
                 "new-cover.jpg",
-                "Physics"
+                "Physics",
+                CourseVisibility.PUBLIC
         );
 
         when(courseRepository.findById(100L)).thenReturn(Optional.of(course));
@@ -163,14 +167,17 @@ class CourseServiceTest {
                 "New Title",
                 "New Description",
                 "new-cover.jpg",
-                "Physics"
+                "Physics",
+                CourseVisibility.PUBLIC
         );
 
         when(courseRepository.findById(100L)).thenReturn(Optional.of(course));
+        doThrow(new BusinessException("FORBIDDEN", "Только автор курса или администратор может редактировать"))
+                .when(courseAccessService).checkEditAccess(100L, studentDetails);
 
         assertThatThrownBy(() -> courseService.updateCourse(100L, request, studentDetails))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("Вы можете изменять только свои курсы");
+                .hasMessageContaining("Только автор курса или администратор может редактировать");
 
         verify(courseRepository, never()).save(any(Course.class));
     }
@@ -188,7 +195,8 @@ class CourseServiceTest {
                 "New Title",
                 "New Description",
                 "new-cover.jpg",
-                "Physics"
+                "Physics",
+                CourseVisibility.PUBLIC
         );
 
         when(courseRepository.findById(100L)).thenReturn(Optional.of(course));
@@ -237,14 +245,16 @@ class CourseServiceTest {
                 .build();
 
         when(courseRepository.findById(100L)).thenReturn(Optional.of(original));
+        CustomUserDetails newAuthorDetails = new CustomUserDetails(newAuthor);
         when(userRepository.findById(4L)).thenReturn(Optional.of(newAuthor));
+        when(courseAccessService.hasAccess(original, newAuthorDetails)).thenReturn(true);
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> {
             Course copy = invocation.getArgument(0);
             copy.setId(200L);
             return copy;
         });
 
-        CourseResponse response = courseService.copyCourse(100L, 4L);
+        CourseResponse response = courseService.copyCourse(100L, newAuthorDetails);
 
         assertThat(response).isNotNull();
         assertThat(response.title()).isEqualTo("Original Course (Копия)");

@@ -2,6 +2,7 @@ package com.education.tasks.service;
 
 import com.education.common.exception.BusinessException;
 import com.education.courses.entity.Lesson;
+import com.education.courses.service.CourseAccessService;
 import com.education.courses.repository.LessonRepository;
 import com.education.tasks.dto.TaskAttemptRequest;
 import com.education.tasks.dto.TaskAttemptResponse;
@@ -28,6 +29,7 @@ public class TaskService {
     private final TaskAttemptRepository taskAttemptRepository;
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
+    private final CourseAccessService courseAccessService;
 
     @Transactional
     public TaskResponse createTask(Long lessonId, TaskCreateRequest request, CustomUserDetails userDetails) {
@@ -59,6 +61,11 @@ public class TaskService {
     public TaskAttemptResponse submitAttempt(Long taskId, TaskAttemptRequest request, CustomUserDetails userDetails) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "Задание не найдено"));
+
+        courseAccessService.checkAccess(task.getLesson().getCourse().getId(), userDetails);
+        if (!Boolean.TRUE.equals(task.getLesson().getIsPublished())) {
+            throw new BusinessException("ACCESS_DENIED", "Задание недоступно до публикации урока");
+        }
 
         AttemptStatus status = checkAnswer(task, request.studentAnswer());
 

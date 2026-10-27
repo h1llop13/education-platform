@@ -3,10 +3,10 @@ package com.education.files.service;
 import com.education.common.exception.BusinessException;
 import com.education.courses.entity.Course;
 import com.education.courses.repository.CourseRepository;
+import com.education.courses.service.CourseAccessService;
 import com.education.files.dto.FileUploadResponse;
 import com.education.files.entity.StoredFile;
 import com.education.files.repository.StoredFileRepository;
-import com.education.users.entity.Role;
 import com.education.users.entity.User;
 import com.education.users.repository.UserRepository;
 import com.education.users.security.CustomUserDetails;
@@ -29,6 +29,7 @@ public class FileService {
     private final StoredFileRepository storedFileRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final CourseAccessService courseAccessService;
 
     @Value("${app.storage.allowed-mime-types}")
     private String allowedMimeTypes;
@@ -59,11 +60,7 @@ public class FileService {
             course = courseRepository.findById(courseId)
                     .orElseThrow(() -> new BusinessException("COURSE_NOT_FOUND", "Курс не найден"));
 
-            boolean isAuthor = course.getAuthor().getId().equals(userDetails.getId());
-            boolean isAdmin = "ADMIN".equals(userDetails.getRole());
-            if (!isAuthor && !isAdmin) {
-                throw new BusinessException("FORBIDDEN", "Нет прав на загрузку файлов в этот курс");
-            }
+            courseAccessService.checkEditAccess(courseId, userDetails);
         }
 
         // 4. Генерация безопасного имени файла (п. 6.3 ТЗ)
@@ -105,13 +102,8 @@ public class FileService {
         boolean isOwner = file.getUploadedBy().getId().equals(userDetails.getId());
         boolean isAdmin = "ADMIN".equals(userDetails.getRole());
 
-        // Если файл привязан к курсу, проверяем доступ к курсу (автор, админ, или курс опубликован и публичен)
-        boolean hasCourseAccess = false;
-        if (file.getCourse() != null) {
-            boolean isCourseAuthor = file.getCourse().getAuthor().getId().equals(userDetails.getId());
-            boolean isPublished = file.getCourse().getStatus().name().equals("PUBLISHED");
-            hasCourseAccess = isCourseAuthor || isAdmin || isPublished;
-        }
+        boolean hasCourseAccess = file.getCourse() != null
+                && courseAccessService.hasAccess(file.getCourse(), userDetails);
 
         if (!isOwner && !isAdmin && !hasCourseAccess) {
             throw new BusinessException("FORBIDDEN", "Нет прав на скачивание этого файла");
