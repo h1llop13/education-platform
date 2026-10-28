@@ -161,3 +161,215 @@
   .section-heading h2 { font-size: 23px; }
   .page-footer { flex-direction: column; }
 }
+
+.auth-top-link {
+  color: #7560df;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.auth-top-register {
+  padding: 9px 12px;
+  border: 1px solid #e7e1fa;
+  border-radius: 8px;
+  background: #f7f4ff;
+}
+.auth-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(390px, .85fr);
+  min-height: 100vh;
+  background: #fff;
+}
+.auth-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: 35px clamp(25px, 6vw, 90px) 25px;
+  background: #f5f2ff;
+}
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  color: #24233c;
+  text-decoration: none;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+.auth-visual-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  margin: auto 0;
+  padding-top: 30px;
+}
+.auth-visual-copy h1 {
+  max-width: 530px;
+  margin: 20px 0 16px;
+  color: #292640;
+  font-size: clamp(35px, 4.5vw, 60px);
+  letter-spacing: -2px;
+  line-height: 1.08;
+}
+.auth-visual-copy h1 span { color: #8068e8; }
+.auth-visual-copy > p {
+  max-width: 390px;
+  color: #858099;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.auth-visual-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 250px;
+  margin-top: 12px;
+}
+.auth-art-orbit {
+  position: absolute;
+  width: 235px;
+  height: 235px;
+  border: 1px solid #ded5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 22px #eee8ff;
+}
+.auth-art-book {
+  display: grid;
+  place-items: center;
+  width: 125px;
+  height: 145px;
+  border-radius: 24px 24px 32px 14px;
+  background: linear-gradient(145deg,#a393ff,#7560df);
+  color: white;
+  font-size: 70px;
+  font-weight: 800;
+  transform: rotate(-8deg);
+  box-shadow: 13px 15px 0 #ded6ff, 0 25px 45px #7760e526;
+}
+.auth-art-star {
+  position: absolute;
+  top: 24px;
+  right: 15%;
+  color: #eab06c;
+  font-size: 43px;
+}
+.auth-visual-footer {
+  color: #9b96b4;
+  font-size: 11px;
+}
+.auth-form-side {
+  display: flex;
+  flex-direction: column;
+  padding: 35px clamp(24px, 5vw, 75px);
+}
+.auth-back {
+  align-self: flex-end;
+  color: #8e89a4;
+  text-decoration: none;
+  font-size: 12px;
+}
+.auth-form-wrap {
+  width: 100%;
+  max-width: 410px;
+  margin: auto;
+  padding: 35px 0;
+}
+.auth-form-wrap h2 {
+  margin: 15px 0 8px;
+  color: #292840;
+  font-size: 34px;
+  letter-spacing: -1.3px;
+}
+.auth-subtitle {
+  margin-bottom: 27px;
+  color: #8f8ba1;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.auth-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 22px;
+}
+.auth-form label {
+  display: grid;
+  gap: 8px;
+  color: #4d4a64;
+  font-size: 11px;
+  font-weight: 700;
+}
+.auth-form input {
+  width: 100%;
+  min-height: 45px;
+  padding: 12px 13px;
+  border: 1px solid #e8e5f0;
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+  color: #292840;
+  font-size: 12px;
+  font-weight: 400;
+  transition: border-color .2s, box-shadow .2s;
+}
+.auth-form input:focus {
+  border-color: #9582ed;
+  box-shadow: 0 0 0 3px #8b77ec1a;
+}
+.auth-form input::placeholder { color: #b0acc0; }
+.auth-submit {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 5px;
+}
+.auth-submit:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+.auth-switch {
+  margin-top: 24px;
+  color: #8f8ba1;
+  text-align: center;
+  font-size: 11px;
+}
+.auth-switch a {
+  color: #7560df;
+  font-weight: 700;
+  text-decoration: none;
+}
+.auth-error, .auth-notice {
+  padding: 12px 13px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.auth-error {
+  border: 1px solid #f4d3d3;
+  background: #fff3f3;
+  color: #b33d49;
+}
+.auth-notice {
+  border: 1px solid #d4efdf;
+  background: #effaf3;
+  color: #287b50;
+}
+.auth-demo-note {
+  margin-top: 25px;
+  color: #aaa6b7;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-visual { display: none; }
+  .auth-form-side { min-height: 100vh; padding: 24px; }
+  .auth-back { align-self: flex-start; }
+  .auth-form-wrap { max-width: 460px; }
+  .auth-form-wrap h2 { font-size: 30px; }
+  .auth-top-register { display: none; }
+}
