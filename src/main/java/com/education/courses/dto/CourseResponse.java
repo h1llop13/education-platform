@@ -15,6 +15,6 @@ public record CourseResponse(
         CourseVisibility visibility,
         Long authorId,
         String authorName,
-        LocalDateTime createdAt
-) {
-}
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt // <-- ДОБАВЛЕНО ЗДЕСЬ
+) {}

@@ -37,6 +37,9 @@ class LessonServiceTest {
     @Mock
     private CourseRepository courseRepository;
 
+    @Mock
+    private CourseAccessService courseAccessService;
+
     @InjectMocks
     private LessonService lessonService;
 

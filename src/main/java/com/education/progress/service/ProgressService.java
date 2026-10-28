@@ -2,8 +2,10 @@ package com.education.progress.service;
 
 import com.education.common.exception.BusinessException;
 import com.education.courses.entity.Course;
+import com.education.courses.entity.Lesson;
 import com.education.courses.repository.CourseRepository;
 import com.education.courses.repository.LessonRepository;
+import com.education.courses.service.CourseAccessService;
 import com.education.progress.dto.StudentProgressDto;
 import com.education.progress.entity.LessonProgress;
 import com.education.progress.repository.LessonProgressRepository;
@@ -31,11 +33,17 @@ public class ProgressService {
     private final TaskRepository taskRepository;
     private final TaskAttemptRepository taskAttemptRepository;
     private final UserRepository userRepository;
+    private final CourseAccessService courseAccessService;
 
     @Transactional
     public void completeLesson(Long lessonId, CustomUserDetails userDetails) {
-        lessonRepository.findById(lessonId)
+        Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new BusinessException("LESSON_NOT_FOUND", "Урок не найден"));
+
+        courseAccessService.checkAccess(lesson.getCourse().getId(), userDetails);
+        if (!Boolean.TRUE.equals(lesson.getIsPublished())) {
+            throw new BusinessException("ACCESS_DENIED", "Нельзя завершить неопубликованный урок");
+        }
 
         // ТЗ: Нельзя завершить урок "задним числом" без попытки, если в нем есть задания
         long taskCount = taskRepository.countByLessonId(lessonId);

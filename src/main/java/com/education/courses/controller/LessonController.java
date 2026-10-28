@@ -29,13 +29,18 @@ public class LessonController {
     }
 
     @GetMapping("/courses/{courseId}/lessons")
-    public ResponseEntity<List<LessonResponse>> getLessonsByCourse(@PathVariable Long courseId) {
-        return ResponseEntity.ok(lessonService.getLessonsByCourse(courseId));
+    public ResponseEntity<List<LessonResponse>> getLessonsByCourse(
+            @PathVariable Long courseId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(lessonService.getLessonsByCourse(courseId, userDetails));
     }
 
+    // ИСПРАВЛЕНО: добавлен параметр userDetails
     @GetMapping("/lessons/{lessonId}")
-    public ResponseEntity<LessonResponse> getLesson(@PathVariable Long lessonId) {
-        return ResponseEntity.ok(lessonService.getLesson(lessonId));
+    public ResponseEntity<LessonResponse> getLesson(
+            @PathVariable Long lessonId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(lessonService.getLesson(lessonId, userDetails));
     }
 
     @PutMapping("/lessons/{lessonId}")

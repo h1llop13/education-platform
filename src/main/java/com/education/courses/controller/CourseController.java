@@ -1,9 +1,8 @@
 package com.education.courses.controller;
 
-import com.education.courses.dto.CourseCreateRequest;
-import com.education.courses.dto.CourseResponse;
-import com.education.courses.dto.CourseUpdateRequest;
+import com.education.courses.dto.*;
 import com.education.courses.service.CourseService;
+import com.education.courses.service.InvitationService;
 import com.education.users.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,15 +19,19 @@ import java.util.List;
 public class CourseController {
 
     private final CourseService courseService;
+    private final InvitationService invitationService;
 
     @GetMapping
-    public ResponseEntity<List<CourseResponse>> getCatalog() {
-        return ResponseEntity.ok(courseService.getPublicCatalog());
+    public ResponseEntity<List<CourseResponse>> getCatalog(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(courseService.getPublicCatalog(userDetails));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CourseResponse> getCourse(@PathVariable Long id) {
-        return ResponseEntity.ok(courseService.getCourse(id));
+    public ResponseEntity<CourseResponse> getCourse(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(courseService.getCourse(id, userDetails));
     }
 
     @PostMapping
@@ -57,6 +60,21 @@ public class CourseController {
     public ResponseEntity<CourseResponse> copyCourse(
             @PathVariable Long id,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        return new ResponseEntity<>(courseService.copyCourse(id, userDetails.getId()), HttpStatus.CREATED);
+        return new ResponseEntity<>(courseService.copyCourse(id, userDetails), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/{id}/invitations")
+    public ResponseEntity<InvitationResponse> createInvitation(
+            @PathVariable Long id,
+            @Valid @RequestBody InvitationRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return new ResponseEntity<>(invitationService.createInvitation(id, request, userDetails), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{id}/invitations")
+    public ResponseEntity<List<InvitationResponse>> getInvitations(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(invitationService.getCourseInvitations(id, userDetails));
     }
 }
