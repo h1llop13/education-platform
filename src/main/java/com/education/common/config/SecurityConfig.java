@@ -56,7 +56,9 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
-                "https://nasty-hobgoblin-7v4gxqq9w7p26g6-5173.app.github.dev"
+                "https://nasty-hobgoblin-7v4gxqq9w7p26g6-5173.app.github.dev",
+                "http://localhost:5173", // Добавь порт твоего локального фронтенда (Vite/React/Vue)
+                "http://localhost:3000"
         ));
 
         config.setAllowedMethods(List.of(
