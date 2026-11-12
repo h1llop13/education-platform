@@ -27,7 +27,6 @@ public class CourseAccessService {
     }
 
     public boolean hasAccess(Course course, CustomUserDetails userDetails) {
-        // ИСПРАВЛЕНО: сравниваем строки через .equals()
         if ("ADMIN".equals(userDetails.getRole())) {
             return true;
         }
@@ -51,7 +50,6 @@ public class CourseAccessService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new BusinessException("COURSE_NOT_FOUND", "Курс не найден"));
 
-        // ИСПРАВЛЕНО: сравниваем строки через .equals()
         if (!course.getAuthor().getId().equals(userDetails.getId()) && !"ADMIN".equals(userDetails.getRole())) {
             throw new BusinessException("ACCESS_DENIED", "Только автор курса или администратор может редактировать");
         }

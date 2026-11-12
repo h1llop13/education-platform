@@ -45,7 +45,6 @@ public class ProgressService {
             throw new BusinessException("ACCESS_DENIED", "Нельзя завершить неопубликованный урок");
         }
 
-        // ТЗ: Нельзя завершить урок "задним числом" без попытки, если в нем есть задания
         long taskCount = taskRepository.countByLessonId(lessonId);
         if (taskCount > 0) {
             boolean hasAttempt = taskAttemptRepository.existsByTask_Lesson_IdAndUser_Id(lessonId, userDetails.getId());

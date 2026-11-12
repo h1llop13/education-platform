@@ -42,19 +42,16 @@ public class FileService {
         User uploader = userRepository.findById(userDetails.getId())
                 .orElseThrow(() -> new BusinessException("USER_NOT_FOUND", "Пользователь не найден"));
 
-        // 1. Проверка MIME-типа (п. 6.3 ТЗ)
         List<String> allowedTypes = Arrays.asList(allowedMimeTypes.split(","));
         String contentType = file.getContentType();
         if (contentType == null || !allowedTypes.contains(contentType)) {
             throw new BusinessException("INVALID_FILE_TYPE", "Недопустимый тип файла. Разрешены: " + allowedMimeTypes);
         }
 
-        // 2. Проверка размера (п. 6.3 ТЗ)
         if (file.getSize() > maxFileSizeBytes) {
             throw new BusinessException("FILE_TOO_LARGE", "Размер файла превышает допустимый лимит");
         }
 
-        // 3. Проверка прав на курс (если файл привязывается к курсу)
         Course course = null;
         if (courseId != null) {
             course = courseRepository.findById(courseId)
@@ -63,14 +60,12 @@ public class FileService {
             courseAccessService.checkEditAccess(courseId, userDetails);
         }
 
-        // 4. Генерация безопасного имени файла (п. 6.3 ТЗ)
         String originalFilename = file.getOriginalFilename();
         String extension = originalFilename != null && originalFilename.contains(".")
                 ? originalFilename.substring(originalFilename.lastIndexOf("."))
                 : "";
         String storedFileName = UUID.randomUUID().toString() + extension;
 
-        // 5. Сохранение в хранилище и БД
         storageService.storeFile(file, storedFileName);
 
         StoredFile storedFile = StoredFile.builder()
@@ -98,7 +93,6 @@ public class FileService {
         StoredFile file = storedFileRepository.findById(fileId)
                 .orElseThrow(() -> new BusinessException("FILE_NOT_FOUND", "Файл не найден"));
 
-        // Проверка прав доступа перед скачиванием (п. 6.3 и 11.4 ТЗ)
         boolean isOwner = file.getUploadedBy().getId().equals(userDetails.getId());
         boolean isAdmin = "ADMIN".equals(userDetails.getRole());
 

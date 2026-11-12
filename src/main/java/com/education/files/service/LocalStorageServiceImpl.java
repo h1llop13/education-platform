@@ -34,7 +34,6 @@ public class LocalStorageServiceImpl implements StorageService {
                 throw new BusinessException("INVALID_FILE", "Файл пуст");
             }
 
-            // защита от Directory Traversal
             Path targetLocation = this.fileStorageLocation.resolve(storedFilename).normalize();
             if (!targetLocation.startsWith(this.fileStorageLocation)) {
                 throw new BusinessException("SECURITY_ERROR", "Небезопасное имя файла");

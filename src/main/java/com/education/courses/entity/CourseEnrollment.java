@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder // <-- ДОБАВЛЕНО ЗДЕСЬ
+@Builder
 public class CourseEnrollment {
 
     @Id

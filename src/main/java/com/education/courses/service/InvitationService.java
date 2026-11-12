@@ -29,11 +29,10 @@ public class InvitationService {
     private final CourseInvitationRepository invitationRepository;
     private final CourseEnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
-    private final CourseAccessService courseAccessService; // ТЕПЕРЬ ИСПОЛЬЗУЕТСЯ
+    private final CourseAccessService courseAccessService;
 
     @Transactional
     public InvitationResponse createInvitation(Long courseId, InvitationRequest request, CustomUserDetails userDetails) {
-        // ИСПРАВЛЕНО: используем сервис вместо ручной проверки (убирает warning)
         courseAccessService.checkEditAccess(courseId, userDetails);
 
         Course course = courseRepository.findById(courseId)
@@ -113,7 +112,6 @@ public class InvitationService {
     }
 
     public List<InvitationResponse> getCourseInvitations(Long courseId, CustomUserDetails userDetails) {
-        // ИСПРАВЛЕНО: используем сервис вместо ручной проверки (убирает warning)
         courseAccessService.checkEditAccess(courseId, userDetails);
 
         return invitationRepository.findByCourseId(courseId).stream()

@@ -39,7 +39,6 @@ public class FileController {
 
         Resource resource = fileService.getFileForDownload(id, userDetails);
 
-        // Попытаемся получить имя файла из ресурса, если это возможно, или используем стандартное
         String filename = "downloaded_file";
         if (resource.getFilename() != null) {
             filename = resource.getFilename();

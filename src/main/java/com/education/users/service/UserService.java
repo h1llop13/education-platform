@@ -20,15 +20,13 @@ public class UserService {
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
-        // 1. Проверка уникальности email
         if (userRepository.existsByEmailIgnoreCase(request.email())) {
             throw new BusinessException("EMAIL_ALREADY_EXISTS", "Пользователь с таким email уже зарегистрирован");
         }
 
-        // 2. Создание пользователя (ВНИМАНИЕ: строка .password() должна быть обязательно!)
         User user = User.builder()
                 .email(request.email().toLowerCase())
-                .password(passwordEncoder.encode(request.password())) // <-- ВОТ ЭТА СТРОКА ХЕШИРУЕТ И ПРИСВАИВАЕТ ПАРОЛЬ
+                .password(passwordEncoder.encode(request.password()))
                 .fullName(request.fullName())
                 .role(Role.STUDENT)
                 .build();

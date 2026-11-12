@@ -76,9 +76,6 @@ public class LessonBlockService {
         lessonBlockRepository.delete(block);
     }
 
-    /**
-     * Валидация структуры content в зависимости от типа блока
-     */
     private void validateContent(BlockType blockType, JsonNode content) {
         if (content == null || content.isNull()) {
             throw new BusinessException("INVALID_CONTENT", "Содержимое блока не может быть пустым");
@@ -95,9 +92,6 @@ public class LessonBlockService {
         }
     }
 
-    /**
-     * IMAGE: { "fileId": 123, "alt": "Описание" }
-     */
     private void validateImageContent(JsonNode content) {
         if (!content.has("fileId") || content.get("fileId").isNull()) {
             throw new BusinessException("INVALID_CONTENT", "Для блока IMAGE обязательно поле 'fileId'");
@@ -113,9 +107,6 @@ public class LessonBlockService {
         }
     }
 
-    /**
-     * VIDEO: { "fileId": 123 } или { "externalUrl": "https://..." }
-     */
     private void validateVideoContent(JsonNode content) {
         boolean hasFileId = content.has("fileId") && !content.get("fileId").isNull();
         boolean hasExternalUrl = content.has("externalUrl") && !content.get("externalUrl").isNull();
@@ -143,9 +134,6 @@ public class LessonBlockService {
         }
     }
 
-    /**
-     * WARNING: { "level": "INFO|WARNING|DANGER", "title": "...", "text": "..." }
-     */
     private void validateWarningContent(JsonNode content) {
         if (!content.has("text") || content.get("text").isNull() || content.get("text").asText().isBlank()) {
             throw new BusinessException("INVALID_CONTENT", "Для блока WARNING обязательно поле 'text'");
@@ -160,9 +148,6 @@ public class LessonBlockService {
         }
     }
 
-    /**
-     * EXTERNAL_LINK: { "url": "https://...", "title": "...", "description": "..." }
-     */
     private void validateExternalLinkContent(JsonNode content) {
         if (!content.has("url") || content.get("url").isNull() || content.get("url").asText().isBlank()) {
             throw new BusinessException("INVALID_CONTENT", "Для блока EXTERNAL_LINK обязательно поле 'url'");
@@ -174,9 +159,6 @@ public class LessonBlockService {
         }
     }
 
-    /**
-     * Проверка существования файла
-     */
     private void validateFileExists(Long fileId, String fileType) {
         if (!storedFileRepository.existsById(fileId)) {
             throw new BusinessException("FILE_NOT_FOUND",

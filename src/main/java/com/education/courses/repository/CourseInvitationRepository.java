@@ -15,7 +15,6 @@ public interface CourseInvitationRepository extends JpaRepository<CourseInvitati
 
     boolean existsByCourseIdAndEmailAndStatus(Long courseId, String email, InvitationStatus status);
 
-    // ДОБАВЛЕНО: этот метод искал компилятор
     Optional<CourseInvitation> findByCourseIdAndEmailAndStatus(Long courseId, String email, InvitationStatus status);
 
     List<CourseInvitation> findByCourseIdAndStatus(Long courseId, InvitationStatus status);

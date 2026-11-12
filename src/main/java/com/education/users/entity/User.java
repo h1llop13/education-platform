@@ -22,7 +22,7 @@ public class User {
     @Column(nullable = false)
     private String email;
 
-    @Column(nullable = false) // <-- Это поле не может быть null в БД
+    @Column(nullable = false)
     private String password;
 
     @Column(name = "full_name", nullable = false)

@@ -28,7 +28,6 @@ public class CourseService {
         List<Course> courses;
 
         if (userDetails == null) {
-            // ИСПРАВЛЕНО: правильное имя метода
             courses = courseRepository.findByStatusAndVisibility(CourseStatus.PUBLISHED, CourseVisibility.PUBLIC);
         } else {
             courses = courseRepository.findAccessibleCourses(userDetails.getId());
@@ -139,10 +138,10 @@ public class CourseService {
                 course.getDiscipline(),
                 course.getStatus(),
                 course.getVisibility(),
-                course.getAuthor().getId(),        // ИСПРАВЛЕНО: было getFullName()
-                course.getAuthor().getFullName(),  // ИСПРАВЛЕНО: было getCreatedAt()
+                course.getAuthor().getId(),
+                course.getAuthor().getFullName(),
                 course.getCreatedAt(),
-                course.getUpdatedAt()              // ИСПРАВЛЕНО: добавлено
+                course.getUpdatedAt()
         );
     }
 }
