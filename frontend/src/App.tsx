@@ -103,6 +103,8 @@ function App() {
   const [metrics, setMetrics] = useState<CourseMetrics>({})
   const [loading, setLoading] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
+  const [showCreateCourse, setShowCreateCourse] = useState(false)
+  const [workspaceCourse, setWorkspaceCourse] = useState<Course | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
@@ -183,6 +185,51 @@ function App() {
     setNotice(message)
   }
 
+  function openCourseCreation() {
+    if (!user) {
+      setShowLogin(true)
+      return
+    }
+    if (user.role === 'STUDENT') {
+      setNotice('Создание курсов доступно преподавателю или администратору.')
+      return
+    }
+    setShowCreateCourse(true)
+  }
+
+  async function handleCreateCourse(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!token || !user) {
+      setShowCreateCourse(false)
+      setShowLogin(true)
+      return
+    }
+
+    const form = new FormData(event.currentTarget)
+    const coverUrl = String(form.get('coverUrl') ?? '').trim()
+    setLoading(true)
+    try {
+      const course = await request<Course>('/courses', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          title: String(form.get('title') ?? '').trim(),
+          description: String(form.get('description') ?? '').trim() || null,
+          discipline: String(form.get('discipline') ?? '').trim() || null,
+          coverUrl: coverUrl || null,
+          visibility: String(form.get('visibility') ?? 'PUBLIC'),
+        }),
+      })
+      setCourses((currentCourses) => [course, ...currentCourses])
+      setMetrics((currentMetrics) => ({ ...currentMetrics, [course.id]: { lessons: 0, students: 0, averageProgress: null } }))
+      setShowCreateCourse(false)
+      setWorkspaceCourse(course)
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Не удалось создать курс')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const canCreate = user?.role === 'TEACHER' || user?.role === 'ADMIN'
 
   return (
@@ -205,13 +252,14 @@ function App() {
 
       <section className="content" id="top">
         <header className="topbar">
-          <div className="crumb">Преподаватель <span>/</span> Мои курсы</div>
+          <div className="crumb">Преподаватель <span>/</span> {workspaceCourse ? workspaceCourse.title : 'Мои курсы'}</div>
           <button className="login-link" onClick={() => user ? logout() : setShowLogin(true)}>{user ? 'Выйти' : 'Войти'}</button>
         </header>
 
+        {workspaceCourse ? <CourseWorkspace course={workspaceCourse} onBack={() => setWorkspaceCourse(null)} onStartLesson={() => showNextStep('Конструктор уроков начнём следующим этапом — здесь появится кнопка добавления первого урока.')} /> : <>
         <div className="page-heading">
           <div><p className="eyebrow">ВАША РАБОЧАЯ ОБЛАСТЬ</p><h1>Мои курсы</h1><p className="subtitle">Создавайте понятные занятия и следите, как студенты осваивают материал.</p></div>
-          <button className="primary-button" disabled={!canCreate && Boolean(user)} onClick={() => showNextStep('Мастер создания курса — следующий этап. Здесь откроется форма названия, описания и доступа.')}><span>＋</span> Создать курс</button>
+          <button className="primary-button" disabled={!canCreate && Boolean(user)} onClick={openCourseCreation}><span>＋</span> Создать курс</button>
         </div>
 
         {user && !canCreate && <div className="role-note">У вас роль «студент». Создание курсов доступно преподавателю или администратору.</div>}
@@ -226,15 +274,42 @@ function App() {
         <section id="courses" className="courses-section">
           <div className="section-heading"><h2>Ваши курсы</h2><span>{loading ? 'Загружаем…' : `${courses.length} ${courses.length === 1 ? 'курс' : courses.length < 5 ? 'курса' : 'курсов'}`}</span></div>
           <div className="course-grid">
-            {courses.map((course, index) => <CourseCard key={course.id} course={course} metrics={metrics[course.id]} accent={index % 3} onOpen={() => showNextStep('Редактор курса будет следующим экраном.')} />)}
-            {canCreate && <button className="new-course-card" onClick={() => showNextStep('Мастер создания курса — следующий этап.')}><span>＋</span><strong>Новый курс</strong><small>Начните с названия и описания</small></button>}
+            {courses.map((course, index) => <CourseCard key={course.id} course={course} metrics={metrics[course.id]} accent={index % 3} onOpen={() => setWorkspaceCourse(course)} />)}
+            {canCreate && <button className="new-course-card" onClick={openCourseCreation}><span>＋</span><strong>Новый курс</strong><small>Начните с названия и описания</small></button>}
           </div>
         </section>
+        </>}
       </section>
 
       {showLogin && <div className="modal-backdrop" role="presentation" onMouseDown={() => setShowLogin(false)}><section className="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title" onMouseDown={(event) => event.stopPropagation()}><button className="close-modal" onClick={() => setShowLogin(false)} aria-label="Закрыть">×</button><span className="dialog-icon">K</span><h2 id="login-title">Войти в Кампус</h2><p>Введите данные преподавателя из backend.</p><form onSubmit={handleLogin}><label>Email<input name="email" type="email" placeholder="teacher@college.ru" required /></label><label>Пароль<input name="password" type="password" placeholder="Не менее 8 символов" required /></label><button className="primary-button full" disabled={loading}>{loading ? 'Входим…' : 'Войти и загрузить курсы'}</button></form></section></div>}
+      {showCreateCourse && <CreateCourseDialog loading={loading} onClose={() => setShowCreateCourse(false)} onSubmit={handleCreateCourse} />}
     </main>
   )
+}
+
+function CreateCourseDialog({ loading, onClose, onSubmit }: { loading: boolean; onClose: () => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
+  return <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+    <section className="create-dialog" role="dialog" aria-modal="true" aria-labelledby="create-course-title" onMouseDown={(event) => event.stopPropagation()}>
+      <button className="close-modal" onClick={onClose} aria-label="Закрыть">×</button>
+      <div className="wizard-head"><span className="dialog-icon">＋</span><div><p>НОВЫЙ КУРС</p><h2 id="create-course-title">Соберите основу курса</h2></div></div>
+      <p className="wizard-intro">Укажите самое важное. Уроки и материалы добавим уже в редакторе.</p>
+      <form className="course-form" onSubmit={onSubmit}>
+        <label>Название курса<input name="title" placeholder="Например, Основы веб-разработки" maxLength={255} required autoFocus /></label>
+        <label>Краткое описание<textarea name="description" placeholder="Чему научатся студенты и для кого этот курс" maxLength={2000} rows={3} /></label>
+        <div className="form-row"><label>Дисциплина<input name="discipline" placeholder="Программирование" maxLength={100} /></label><label>Обложка <span className="optional">необязательно</span><input name="coverUrl" type="url" placeholder="https://…" /></label></div>
+        <fieldset><legend>Доступ к курсу</legend><label className="choice"><input type="radio" name="visibility" value="PUBLIC" defaultChecked /><span><strong>Публичный</strong><small>Доступен всем пользователям платформы</small></span></label><label className="choice"><input type="radio" name="visibility" value="PRIVATE" /><span><strong>Приватный</strong><small>Доступен только приглашённым студентам</small></span></label></fieldset>
+        <div className="form-actions"><button type="button" className="secondary-button" onClick={onClose}>Отмена</button><button className="primary-button" disabled={loading}>{loading ? 'Создаём…' : 'Создать и открыть редактор'} <span>→</span></button></div>
+      </form>
+    </section>
+  </div>
+}
+
+function CourseWorkspace({ course, onBack, onStartLesson }: { course: Course; onBack: () => void; onStartLesson: () => void }) {
+  return <section className="workspace">
+    <button className="back-link" onClick={onBack}>← Все курсы</button>
+    <div className="workspace-hero"><div><p className="eyebrow">{statusLabel(course.status)} · {course.visibility === 'PUBLIC' ? 'Публичный курс' : 'Приватный курс'}</p><h1>{course.title}</h1><p>{course.description || 'Описание можно дополнить в настройках курса.'}</p></div><button className="secondary-button" onClick={() => undefined}>Настройки курса</button></div>
+    <div className="workspace-grid"><aside><p>СОДЕРЖАНИЕ КУРСА</p><button className="outline-item active">▤ Уроки <span>0</span></button><button className="outline-item">◎ О курсе</button></aside><article className="empty-editor"><span>▤</span><h2>Курс создан. Начнём с первого урока?</h2><p>Добавьте урок, а затем наполните его текстом, кодом, тестами и другими учебными материалами.</p><button className="primary-button" onClick={onStartLesson}><span>＋</span> Добавить первый урок</button></article></div>
+  </section>
 }
 
 function CourseCard({ course, metrics, accent, onOpen }: { course: Course; metrics?: CourseMetrics[number]; accent: number; onOpen: () => void }) {
