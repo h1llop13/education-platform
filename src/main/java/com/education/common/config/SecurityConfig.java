@@ -56,6 +56,8 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
                 "https://nasty-hobgoblin-7v4gxqq9w7p26g6-5173.app.github.dev"
         ));
 
